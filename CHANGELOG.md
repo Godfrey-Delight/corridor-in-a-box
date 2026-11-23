@@ -7,6 +7,39 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
 
 ## [Unreleased]
 
+### Added — conformance test kit for planners ([#616](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/616))
+
+- `@corridor/router/testing` exports `describePlannerContract`, `checkPlannerContract` and
+  `expectPlannerContract`: the planner rules as executable cases (an unattested option is never
+  offered, every dropped option carries a reason, the same input yields the same order, every label
+  is `locked`, `indicative` or `estimated`). Labels are the router's `AllowedPriceLabel`.
+  Documented in `docs/route-resolver.md`.
+- `tests/planner-contract.test.ts` runs the suite over a stub planner and asserts it fails a planner
+  that breaks each rule.
+
+### Added — wallet route manifest shape ([#646](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/646))
+
+- `protocol: wallet` destinations: the corridor declares `asset`, `asset_issuer` (optional), `settlement.network`
+  and a `home_domain`; each `PaymentIntent` supplies the recipient `wallet` (`account`, optional `memo`/`memoType`),
+  validated by `WalletDestinationSchema`. Schema and validation only: a wallet lane is reported `not-runnable`
+  because the engine cannot execute one yet, and `corridor plan` is unchanged.
+
+### Added — routing choice in the audit trail (#628)
+
+- `RouteDecision` takes an optional `ranking` (`OptionRanking` of `RankedOption`s in
+  `@corridor/router`). The engine records the chosen option, its RFC 0004 price label
+  (`locked` / `indicative` / `estimated`) and rank, and the reasons of the top three options
+  as `route` on the run's first audit entry out of `created`; `PostgresAuditSink` keeps it in
+  `detail`. When the resolver gives the chosen option no label, the run's own quote label is
+  recorded. Without a ranking the receiving adapter is recorded as the only option.
+  See `docs/route-resolver.md#recording-the-choice`.
+
+### Added — `RouteRequest`, `RoutePolicy`, `PriceLabel`, `RouteOption` and `RoutePlanner` types ([#603](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/603))
+
+- `@corridor/router` exports `RouteRequest`, `RoutePolicy`, `PriceLabel`, `RouteOption` and
+  `RoutePlanner` (`packages/router/src/planner.ts`), matching the route planner interface sketch
+  in `docs/rfcs/0004-smart-router.md` §1 with TSDoc on every type and field.
+
 ### Added — a custody statement ([#707](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/707))
 
 - `docs/custody.md` says in one place that the project never holds funds or a key that can

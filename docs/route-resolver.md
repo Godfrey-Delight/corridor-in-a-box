@@ -81,6 +81,75 @@ it is set, its weights should sum to 1, so the field keeps its meaning when the
 engine starts to honour it. That support will come as its own change, with a
 changelog entry.
 
+### Recording the choice
+
+A resolver can explain its choice by returning an optional `ranking` (an
+`OptionRanking` of `RankedOption`s, both exported from `@corridor/router`):
+
+```ts
+return {
+  receiving: anchorX,
+  trust: "attested",
+  ranking: {
+    chosen: "anchor-x",
+    options: [
+      {
+        id: "anchor-x",
+        label: "locked",
+        rank: 1,
+        reasons: ["attested 2h ago", "lowest total fee 0.45%"],
+      },
+      { id: "anchor-y", label: "indicative", rank: 2, reasons: ["fee 0.60%"] },
+    ],
+  },
+};
+```
+
+`label` is the option's RFC 0004 price label: `locked` (a firm SEP-38 quote),
+`indicative` (the anchor's current price, not promised) or `estimated` (from
+rate history). See
+[RFC 0004, section 2](rfcs/0004-smart-router.md#2-price-labels-shown-to-people).
+Leave it out for an option that could not be priced.
+
+The engine records it once, on the run's first transition out of `created`
+(including when that transition is to `failed`), as the audit entry's `route`
+field:
+
+```json
+{
+  "route": {
+    "chosen": { "id": "anchor-x", "label": "locked", "rank": 1 },
+    "top": [
+      {
+        "id": "anchor-x",
+        "label": "locked",
+        "rank": 1,
+        "reasons": ["attested 2h ago", "lowest total fee 0.45%"]
+      },
+      { "id": "anchor-y", "label": "indicative", "rank": 2, "reasons": ["fee 0.60%"] }
+    ]
+  }
+}
+```
+
+- `top` holds at most three options, best rank first; ties keep the resolver's order.
+- Each option keeps at most five reasons, and every string is capped at 200
+  characters. Reasons go into the append-only trail, so keep them PII-free.
+- `chosen.label` is the label the resolver gave the chosen option. When it gave
+  none, the run's own quote label is used instead (`locked` for a firm quote,
+  `indicative` otherwise, the same value the run stores as `priceLabel`). It is
+  left out only when neither is known, for example a run that failed before it
+  was quoted.
+- Only `locked`, `indicative` and `estimated` are recorded. Any other `label`
+  value is dropped.
+- Without a `ranking`, or when `chosen` matches no option, the receiving
+  adapter's `name` is recorded as the single rank-1 option, labelled with the
+  run's quote label.
+- `PostgresAuditSink` stores `route` in the `detail` jsonb column; `listAudit()`
+  returns it unchanged. A resumed run that has already left `created` does not
+  record it again.
+- A resolver that throws (`ROUTE_REFUSED`) records no `route`.
+
 ### Versioning and stability
 
 - The factory contract is versioned by `ROUTE_RESOLVER_API_VERSION` (currently
@@ -266,6 +335,47 @@ Both built-ins and `examples/resolvers/allowlist-resolver.ts` run the suite in
 `tests/router.test.ts`, so the expectations cannot drift away from the resolvers
 they describe. vitest is a peer dependency of the `./testing` subpath only;
 importing `@corridor/router` alone does not pull it in.
+
+## Conformance: `describePlannerContract`
+
+A route planner turns a payment's candidate routes into the options a sender is
+shown: some offered, ranked, each with a price label; the rest dropped, each
+with the reason. `@corridor/router/testing` ships its contract the same way it
+ships the resolver's, so a planner developed outside this repo can prove it
+follows the rules:
+
+```ts
+import { describePlannerContract } from "@corridor/router/testing";
+
+describePlannerContract("MyPlanner", () => new MyPlanner(), {
+  input: myPlanInput, // must include at least one unattested candidate
+  unattestedDomains: ["not-attested.example"], // domains in `input` that must never be offered
+});
+```
+
+The suite is structural. It calls `plan(input)` and needs `{ offered, dropped }`
+back, where each offered option has a `domain` and a `label` and each dropped
+option has a `domain` and a `reason`. It does not depend on the planner's input
+type, so `input` is whatever your planner takes. The label type is the router's own
+`AllowedPriceLabel` (`ALL_PRICE_LABELS` lists the three values), so there is one
+definition of the labels.
+
+Four cases:
+
+| Case                                                 | Why it is on the list                                                      |
+| ---------------------------------------------------- | -------------------------------------------------------------------------- |
+| an unattested option is never offered                | an option nobody has vouched for must not be shown as a way to pay         |
+| every dropped option carries a reason                | a route that vanishes unexplained cannot be explained or debugged          |
+| the same input yields the same order                 | no hidden weights or randomness, so a re-plan cannot reshuffle the options |
+| every label is `locked`, `indicative` or `estimated` | a fourth label is a price the sender has no wording for                    |
+
+A suite whose fixtures name no unattested domain fails the first case instead of
+passing it vacuously.
+
+`checkPlannerContract(name, makePlanner, fixtures)` returns the per-case report
+instead of registering anything, and `expectPlannerContract(report)` throws
+naming every clause that failed. `tests/planner-contract.test.ts` uses them to
+assert that the suite really does fail a planner that breaks each clause.
 
 ## Writing your own
 
