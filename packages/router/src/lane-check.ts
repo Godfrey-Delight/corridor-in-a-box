@@ -111,9 +111,11 @@ async function probeInfo(
   fetchImpl: typeof fetch,
   timeoutMs: number,
 ): Promise<InfoOutcome> {
+  let base = sep31;
+  while (base.endsWith("/")) base = base.slice(0, -1);
   let res: Response;
   try {
-    res = await fetchImpl(`${sep31.replace(/\/+$/, "")}/info`, {
+    res = await fetchImpl(`${base}/info`, {
       headers: { authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(timeoutMs),
     });
