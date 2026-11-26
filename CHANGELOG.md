@@ -7,6 +7,19 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
 
 ## [Unreleased]
 
+### Added — rate history minimum-data rule for estimated prices ([#598](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/598))
+
+- `@corridor/router` exports `assessRateHistory` (`packages/router/src/rate-history.ts`): given the
+  rate history held for a pair at an anchor, it answers whether an `estimated` price may be shown
+  at all, per RFC 0004 §3: at least 100 samples in the 7-day window, and a history reaching back
+  at least 7 days (`now` minus the oldest usable sample, measured over all the history passed in).
+  It returns `{ ok: true, p25, samples }` or `{ ok: false, reason }`.
+- It asks `buildEstimatedOption` rather than re-implementing the rule, so both use the same
+  defaults (`DEFAULT_MIN_ESTIMATE_SAMPLES`, `DEFAULT_MIN_ESTIMATE_SPAN_DAYS`,
+  `DEFAULT_ESTIMATE_WINDOW_DAYS`), the same sample filtering (malformed, non-positive, future and
+  outlier-flagged samples are left out) and the same P25. Window and both thresholds are
+  configurable.
+
 ### Added — lane check v1: authorised GET /sep31/info probe ([#632](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/632))
 
 - `checkLane` in `@corridor/router` now runs two steps: the SEP-10 login through

@@ -286,7 +286,6 @@ export type {
   PinnedRunRecord,
   PinnedRunStore,
 } from "./pinned-resolver";
-
 // RFC 0004 route-option score: run-history success rate, discounted by attestation age.
 export {
   ATTESTATION_PENALTY_LEDGERS,
@@ -306,3 +305,8 @@ export type {
 // then speed, then domain. Pure and deterministic.
 export { rank, cautiousRecipientAmount } from "./rank";
 export type { RankableOption, RankOptions } from "./rank";
+
+// Rate history: the minimum-data rule that decides whether a pair at an
+// anchor may carry an `estimated` price at all (RFC 0004 §3).
+export { assessRateHistory } from "./rate-history";
+export type { EstimateAssessment, EstimateThresholds } from "./rate-history";
