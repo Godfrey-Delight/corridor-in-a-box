@@ -22,6 +22,7 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
   dropped with that reason. `--offline` contacts no anchor, so it can only show `estimated`.
 - `planRoutes` moved from `@corridor/service` to `@corridor/router` so the CLI can run it
   without the HTTP service. `@corridor/service` still exports it; `POST /routes` is unchanged.
+
 ### Added — Route planner guide ([#620](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/620))
 
 - `docs/route-planner.md` explains how a route is chosen, following RFC 0004 §1, §2 and
