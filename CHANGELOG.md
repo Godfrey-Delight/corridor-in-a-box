@@ -20,6 +20,14 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
   `unknown`. The JWT is sent only to the manifest's SEP-31 server and is never returned.
 - `tests/lane-check.test.ts` covers the bearer header, each refusal and unknown case at
   `sep31_info`, and asserts `failedStep` on the existing SEP-10 cases.
+### Added — Daily rate summaries on the web app ([#596](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/596))
+
+- A `/rates` page lists the latest validated daily summary per pair and source (date, source,
+  sample count, min, P25, median, P75, max). Nothing is hardcoded: an unset or broken source
+  shows no numbers.
+- A public, cached JSON endpoint at `/api/rate-summaries` serves the same data.
+- New env var `RATE_SUMMARIES_URL` (documented in `.env.example`) points at the daily summary
+  JSON from #595.
 
 ### Added — Planner step 1: `candidates()` by destination asset and country ([#604](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/604))
 
