@@ -220,3 +220,38 @@ export type {
   RoutePolicy,
   RouteRequest,
 } from "./planner";
+
+export {
+  buildEstimatedOption,
+  DEFAULT_MIN_ESTIMATE_SPAN_DAYS,
+  DEFAULT_ESTIMATE_WINDOW_DAYS,
+  DEFAULT_MIN_ESTIMATE_SAMPLES,
+} from "./estimated-price";
+export type {
+  EstimatedPriceDetails,
+  EstimatedPriceDropped,
+  EstimatedPriceOffered,
+  EstimatedPriceOutcome,
+  EstimatedPricePolicy,
+  EstimatePriceRequest,
+  RateSample,
+} from "./estimated-price";
+export {
+  canonicalDecimal,
+  compareDecimals,
+  percentile,
+  percentileRank,
+  windowed,
+} from "./rate-percentile";
+export {
+  DEFAULT_ESTIMATE_MARGIN_BPS,
+  applyEstimateMargin,
+  fetchIndicativePrice,
+} from "./indicative-price";
+export type { IndicativePriceRequest, IndicativeRouteOption } from "./indicative-price";
+export { PinnedRouteResolver, UnpinnedRouteError } from "./pinned-resolver";
+export type {
+  PinnedRouteResolverOptions,
+  PinnedRunRecord,
+  PinnedRunStore,
+} from "./pinned-resolver";
