@@ -21,6 +21,7 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
 - `estimateGap` is stored in a new nullable `estimate_gap` column on `corridor_runs` (added by
   `migrate()` on existing tables), read back by `get()` and `listByState()`, and returned on
   `RunResult` and `GET /payments/:key` (`RunStatus` in `openapi.yaml`).
+
 ### Added — `reliability()` score for receiving anchors ([#612](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/612))
 
 - `reliability(anchor, deps)` in `@corridor/router` scores a receiving anchor from 0 to 1 (RFC
