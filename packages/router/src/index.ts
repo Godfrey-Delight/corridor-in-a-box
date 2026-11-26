@@ -155,11 +155,13 @@ export {
 export { createAdapterRegistry } from "./adapters";
 export type { AdapterFactory, AdapterRegistry } from "./adapters";
 
-// SEP-10 lane check: whether a receiving anchor's login accepts our own key.
+// Lane check v1: whether a receiving anchor's SEP-10 login and authorised
+// GET /sep31/info accept our own key.
 export {
   checkLane,
   type LaneCheckOptions,
   type LaneCheckResult,
+  type LaneCheckStep,
   type LaneStatus,
 } from "./lane-check";
 export { appendOptionReason, formatOptionReason, summarizeOptionReasons } from "./reasons";

@@ -7,6 +7,20 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
 
 ## [Unreleased]
 
+### Added — lane check v1: authorised GET /sep31/info probe ([#632](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/632))
+
+- `checkLane` in `@corridor/router` now runs two steps: the SEP-10 login through
+  adapter-kit's `Sep10Client` (`sep10_auth`), then `GET <transfer_server_sep31>/info`
+  with the JWT as bearer (`sep31_info`). The lane is `open` only when both pass and the
+  `/info` receive list includes the corridor's on-chain asset (`settlement.receive_asset`,
+  else `settlement.bridge_asset`), matched by asset code and not `enabled: false`.
+- A result that is not open names the step that stopped it in a new `failedStep` field
+  (`LaneCheckStep` is exported). `/info` answering 401 or 403, or not receiving the asset,
+  is `closed`; a 5xx, timeout, malformed body or a corridor with no SEP-31 endpoint is
+  `unknown`. The JWT is sent only to the manifest's SEP-31 server and is never returned.
+- `tests/lane-check.test.ts` covers the bearer header, each refusal and unknown case at
+  `sep31_info`, and asserts `failedStep` on the existing SEP-10 cases.
+
 ### Added — Planner step 1: `candidates()` by destination asset and country ([#604](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/604))
 
 - `candidates(request, corridors)` in `@corridor/router` returns every configured corridor whose
