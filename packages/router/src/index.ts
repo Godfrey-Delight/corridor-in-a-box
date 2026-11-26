@@ -154,7 +154,7 @@ export {
 } from "./registry-resolver";
 
 // Planner step 1: corridors whose declared destination matches the request.
-export { candidates } from "./candidates";
+export { candidates, SEP6_THIRD_PARTY_PAYOUT_REASON } from "./candidates";
 export type { CandidateRequest, CandidatesResult, NonMatchingCorridor } from "./candidates";
 
 // Planner step: keep only candidates the registry can vouch for, with reasons
