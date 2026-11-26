@@ -7,6 +7,19 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
 
 ## [Unreleased]
 
+### Added — Rate history chart per currency pair ([#600](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/600))
+
+- The home page charts every pair, and each corridor page charts its own pair, from the daily
+  summaries that `fetchRateSummaries()` reads (`RATE_SUMMARIES_URL`). One line per source shows
+  the daily median, with a shaded band down to the daily P25 that estimated prices start from.
+  A `reference_fx` source, when published, is drawn as the reference line.
+- A day with no summary or no samples is a gap: the line and band stop there and the day is
+  marked, never interpolated.
+- Each anchor source shows whether its published summaries meet the RFC 0004 minimum-data rule
+  (at least 7 days of data and 100 samples in the last 7 days), with the counts behind it.
+- With no source configured, an unreadable source, or no data for a pair, the chart shows an
+  empty state and no numbers.
+
 ### Added — rate history minimum-data rule for estimated prices ([#598](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/598))
 
 - `@corridor/router` exports `assessRateHistory` (`packages/router/src/rate-history.ts`): given the
