@@ -19,6 +19,7 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
   reads the raw dest, so a protocol schema can no longer drop the field silently.
 - `allowsThirdPartyPayout(corridor)` is exported for the router: `true` only for a SEP-6 dest
   with `third_party_payout: true`. Documented in `docs/sep-coverage.md`.
+
 ### Added — Daily rate summaries on the web app ([#596](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/596))
 
 - A `/rates` page lists the latest validated daily summary per pair and source (date, source,
