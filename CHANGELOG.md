@@ -20,6 +20,7 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
   `unknown`. The JWT is sent only to the manifest's SEP-31 server and is never returned.
 - `tests/lane-check.test.ts` covers the bearer header, each refusal and unknown case at
   `sep31_info`, and asserts `failedStep` on the existing SEP-10 cases.
+
 ### Added — Published history of nightly reference runs ([#680](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/680))
 
 - Each nightly `reference-corridor` run is recorded in `web/lib/generated/reference-runs.json`:
