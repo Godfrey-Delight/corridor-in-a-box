@@ -19,6 +19,22 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
   reads the raw dest, so a protocol schema can no longer drop the field silently.
 - `allowsThirdPartyPayout(corridor)` is exported for the router: `true` only for a SEP-6 dest
   with `third_party_payout: true`. Documented in `docs/sep-coverage.md`.
+### Added — wallet route: settlement to a recipient account ([#647](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/647))
+
+- `WalletAdapter` in `@corridor/stellar` implements the anchor seam for a
+  `protocol: wallet` corridor. It opens an `adapter_settled` payment, submits one
+  plain Stellar payment to the recipient's account through the injected
+  `SettlementSubmitter` (so `StellarSettlementSubmitter` keeps the Horizon
+  submission and ledger confirmation), and reports `completed` only after that
+  confirmation. Concurrent or resumed confirms reuse the one submission.
+- It builds on the `protocol: wallet` manifest shape and `PaymentIntent.wallet` from
+  [#646](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/646): the recipient
+  account and memo come from `intent.wallet`, and the adapter refuses a corridor whose
+  `dest.asset` or `dest.asset_issuer` differs from what settlement pays, since a wallet
+  route cannot convert assets.
+- `tests/wallet-adapter.test.ts` drives the adapter with a stubbed submitter:
+  quote, open, ledger-gated completion, idempotent confirm, submit failure,
+  invalid recipient/memo, refund refusal, and asset, issuer and protocol mismatch refusals.
 
 ### Added — Daily rate summaries on the web app ([#596](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/596))
 
