@@ -188,7 +188,6 @@ export interface RunResult {
    * Recorded when guaranteeEstimates is on. Positive = gain, negative = loss, zero = exact match.
    */
   readonly estimateGap?: string;
-  readonly estimate_gap?: string;
 }
 
 export interface ExecuteOptions {
@@ -241,7 +240,7 @@ export interface ExecuteOptions {
    */
   traceparent?: string;
   /**
-   * When true, guarantee estimated prices and record estimate_gap on the run (RFC 0004 D4).
+   * When true, guarantee estimated prices and record estimateGap on the run (RFC 0004 D4).
    */
   guaranteeEstimates?: boolean;
   /**
@@ -623,26 +622,13 @@ export async function execute(
   run.priceLabel = q.value.firm ? "locked" : "indicative";
   run.settlementAmount = q.value.sourceAmount.amount;
 
-  const intentAny = intent as unknown as {
-    guaranteeEstimates?: boolean;
-    guaranteedAmount?: string | { amount: string };
-  };
-  const guaranteeEstimates = Boolean(
-    opts.guaranteeEstimates ?? deps.guaranteeEstimates ?? intentAny.guaranteeEstimates,
-  );
+  const guaranteeEstimates = Boolean(opts.guaranteeEstimates ?? deps.guaranteeEstimates);
   let guaranteedAmountStr: string | undefined;
   if (guaranteeEstimates) {
-    if (typeof opts.guaranteedAmount === "string") {
-      guaranteedAmountStr = opts.guaranteedAmount;
-    } else if (opts.guaranteedAmount && typeof opts.guaranteedAmount === "object") {
-      guaranteedAmountStr = opts.guaranteedAmount.amount;
-    } else if (typeof intentAny.guaranteedAmount === "string") {
-      guaranteedAmountStr = intentAny.guaranteedAmount;
-    } else if (intentAny.guaranteedAmount && typeof intentAny.guaranteedAmount === "object") {
-      guaranteedAmountStr = intentAny.guaranteedAmount.amount;
-    } else {
-      guaranteedAmountStr = q.value.destAmount?.amount;
-    }
+    guaranteedAmountStr =
+      typeof opts.guaranteedAmount === "string"
+        ? opts.guaranteedAmount
+        : (opts.guaranteedAmount?.amount ?? q.value.destAmount?.amount);
   }
   {
     const t = await advance("quoted", quoteSupplied ? { quoteSupplied: true } : undefined);
@@ -935,21 +921,16 @@ export async function execute(
     if (!r.ok) return finishFailure(r.error);
 
     if (guaranteeEstimates && guaranteedAmountStr) {
-      const rAny = r.value as unknown as { amount_out?: string };
-      const openedAny = opened.value as unknown as { amount_out?: string };
       const actualAmount =
         (typeof opts.actualAmount === "string"
           ? opts.actualAmount
           : opts.actualAmount?.amount) ??
         r.value.amountOut?.amount ??
-        (typeof rAny.amount_out === "string" ? rAny.amount_out : undefined) ??
-        opened.value.amountOut?.amount ??
-        (typeof openedAny.amount_out === "string" ? openedAny.amount_out : undefined);
+        opened.value.amountOut?.amount;
       if (actualAmount !== undefined) {
         const diff = subAmounts(actualAmount, guaranteedAmountStr);
         if (diff.ok) {
           run.estimateGap = diff.value;
-          run.estimate_gap = diff.value;
         }
       }
     }
@@ -1347,9 +1328,7 @@ function toResult(run: StoredRun, trail: readonly CorridorState[]): RunResult {
     settlementKind: run.settlementKind,
     settlementRef: run.settlementRef,
     trail,
-    ...(run.estimateGap !== undefined
-      ? { estimateGap: run.estimateGap, estimate_gap: run.estimateGap }
-      : {}),
+    ...(run.estimateGap !== undefined ? { estimateGap: run.estimateGap } : {}),
   };
 }
 

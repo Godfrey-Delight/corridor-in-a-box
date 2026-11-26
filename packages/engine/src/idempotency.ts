@@ -76,7 +76,6 @@ export interface StoredRun {
    * Recorded when guaranteeEstimates is enabled.
    */
   estimateGap?: string;
-  estimate_gap?: string;
   /**
    * Opaque tenant id that owns this run, so a read can be scoped to its creator.
    * Set by the caller from an already-VALIDATED credential — never from a

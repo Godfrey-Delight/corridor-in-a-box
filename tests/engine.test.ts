@@ -3318,12 +3318,10 @@ describe("guaranteeEstimates and estimate_gap (RFC 0004 D4)", () => {
     if (r.ok) {
       expect(r.value.state).toBe("completed");
       expect(r.value.estimateGap).toBe("5");
-      expect(r.value.estimate_gap).toBe("5");
     }
 
     const stored = await store.get("gain-1");
     expect(stored?.estimateGap).toBe("5");
-    expect(stored?.estimate_gap).toBe("5");
   });
 
   it("records negative estimate_gap for a loss (anchor delivered less than guaranteed)", async () => {
@@ -3341,12 +3339,10 @@ describe("guaranteeEstimates and estimate_gap (RFC 0004 D4)", () => {
     if (r.ok) {
       expect(r.value.state).toBe("completed");
       expect(r.value.estimateGap).toBe("-5");
-      expect(r.value.estimate_gap).toBe("-5");
     }
 
     const stored = await store.get("loss-1");
     expect(stored?.estimateGap).toBe("-5");
-    expect(stored?.estimate_gap).toBe("-5");
   });
 
   it("records zero estimate_gap when anchor delivers exactly guaranteed amount", async () => {
@@ -3364,12 +3360,10 @@ describe("guaranteeEstimates and estimate_gap (RFC 0004 D4)", () => {
     if (r.ok) {
       expect(r.value.state).toBe("completed");
       expect(r.value.estimateGap).toBe("0");
-      expect(r.value.estimate_gap).toBe("0");
     }
 
     const stored = await store.get("zero-1");
     expect(stored?.estimateGap).toBe("0");
-    expect(stored?.estimate_gap).toBe("0");
   });
 
   it("defaults guaranteedAmount to quote destAmount when not explicitly specified", async () => {
@@ -3387,7 +3381,6 @@ describe("guaranteeEstimates and estimate_gap (RFC 0004 D4)", () => {
     if (r.ok) {
       expect(r.value.state).toBe("completed");
       expect(r.value.estimateGap).toBe("2.5");
-      expect(r.value.estimate_gap).toBe("2.5");
     }
 
     const stored = await store.get("default-guarantee");
@@ -3422,7 +3415,6 @@ describe("guaranteeEstimates and estimate_gap (RFC 0004 D4)", () => {
     if (r.ok) {
       expect(r.value.state).toBe("completed");
       expect(r.value.estimateGap).toBeUndefined();
-      expect(r.value.estimate_gap).toBeUndefined();
     }
 
     const stored = await store.get("no-guarantee");

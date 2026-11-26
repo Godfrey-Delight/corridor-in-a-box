@@ -105,6 +105,7 @@ const ALTER_TABLE_SQL = [
   `alter table corridor_runs add column if not exists receiving_domain text;`,
   `alter table corridor_runs add column if not exists route_protocol text;`,
   `alter table corridor_runs add column if not exists price_label text;`,
+  // Estimate gap when a business guarantees estimated prices (#627).
   `alter table corridor_runs add column if not exists estimate_gap text;`,
 ];
 
@@ -202,7 +203,6 @@ function toRun(r: Row): StoredRun {
     owner: r.owner ?? undefined,
     settlement: r.settlement ? JSON.parse(r.settlement) : undefined,
     estimateGap: r.estimate_gap ?? undefined,
-    estimate_gap: r.estimate_gap ?? undefined,
   };
 }
 
@@ -262,7 +262,7 @@ export class PostgresIdempotencyStore implements IdempotencyStore {
         run.receivingDomain ?? null,
         run.routeProtocol ?? null,
         run.priceLabel ?? null,
-        run.estimateGap ?? run.estimate_gap ?? null,
+        run.estimateGap ?? null,
       ],
     );
     return res.rows.length > 0;
@@ -274,7 +274,7 @@ export class PostgresIdempotencyStore implements IdempotencyStore {
               quote_id, quote_expires_at, quote_firm, settlement_amount,
               stellar_tx_hash, settlement_kind, settlement_ref, deposit_address, memo, memo_type,
               refund_id, last_error, owner, settlement, manifest_hash,
-              receiving_domain, route_protocol, price_label
+              receiving_domain, route_protocol, price_label, estimate_gap
          from corridor_runs where idempotency_key = $1`,
       [key],
     );
@@ -295,7 +295,7 @@ export class PostgresIdempotencyStore implements IdempotencyStore {
     const result = await this.db.query<Row>(
       `select idempotency_key, corridor_id, state, version, transaction_id, source_transaction_id,
               quote_id, stellar_tx_hash, settlement_kind, settlement_ref, refund_id, last_error, owner, manifest_hash,
-              receiving_domain, route_protocol, price_label
+              receiving_domain, route_protocol, price_label, estimate_gap
          from corridor_runs where state = $1 ${corridor}
         order by updated_at desc, idempotency_key asc limit ${limitParam}`,
       params,
@@ -422,7 +422,7 @@ export class PostgresIdempotencyStore implements IdempotencyStore {
         run.receivingDomain ?? null,
         run.routeProtocol ?? null,
         run.priceLabel ?? null,
-        run.estimateGap ?? run.estimate_gap ?? null,
+        run.estimateGap ?? null,
       ],
     );
   }

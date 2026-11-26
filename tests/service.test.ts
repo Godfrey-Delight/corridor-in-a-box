@@ -344,7 +344,7 @@ describe("service: GET /payments/:key", () => {
     expect((r.body as { state: string }).state).toBe("completed");
   });
 
-  it("exposes estimate_gap in run status when recorded", async () => {
+  it("exposes estimateGap in run status when recorded", async () => {
     const store = new InMemoryIdempotencyStore();
     await store.put({
       idempotencyKey: "with-gap",
@@ -352,12 +352,11 @@ describe("service: GET /payments/:key", () => {
       state: "completed",
       version: 5,
       estimateGap: "5.00",
-      estimate_gap: "5.00",
     });
     const s = svc({ deps: { ...deps(), idempotency: store } });
     const r = await s.route({ method: "GET", path: "/payments/with-gap" });
     expect(r.status).toBe(200);
-    expect((r.body as { estimate_gap?: string }).estimate_gap).toBe("5.00");
+    expect((r.body as { estimateGap?: string }).estimateGap).toBe("5.00");
   });
 
   it("404s an unknown key", async () => {
