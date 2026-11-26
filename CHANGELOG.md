@@ -7,6 +7,34 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
 
 ## [Unreleased]
 
+### Added — accessibility checks for every step of the send app ([#692](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/692))
+
+- `web/e2e/accessibility.spec.ts` runs axe (WCAG A, AA and 2.2 tags plus best-practice) over each
+  step of the `/send` flow: the amount and destination form, an amount it refuses, finding routes,
+  the ranked routes with all three price labels, the locked-price countdown and its warning, the
+  recipient details loading and loaded, Send refused for missing details, sending, sent, and each
+  failure screen (no routes, every route dropped, an expired locked price, routes or recipient
+  details that can't be loaded, a failed payment). The main steps are scanned again in the dark
+  theme. The older `/payments` runner keeps a smaller set of scans.
+- Keyboard behaviour is asserted beside the scans: Tab reaches every form control in reading order,
+  Enter submits, the routes are one radio group that arrow keys move through and Tab leaves, a
+  refused amount or missing recipient detail moves focus to the field and is read out as its
+  description, and each error screen's button can be pressed from the keyboard.
+- `/send` renders the app without a route planner, field loader or sender, because
+  `@corridor/service` has none yet, so the later steps run on `web/app/send/a11y-fixture`: the same
+  app inside the same `/send` layout, with those three wired to fetches the spec answers with
+  `page.route`. No engine, service or network is needed. The page is a 404 unless the server runs
+  with `SEND_A11Y_FIXTURE=1`, which `web/playwright.config.ts` sets.
+- `web/playwright.config.ts` drives `next start` on the production build rather than the dev
+  server, because axe reads colour contrast from the compiled Tailwind stylesheet. Run it locally
+  with `pnpm test:a11y` in `web/`; it is not part of CI yet.
+- Fixed: an optional recipient field's accessible name ran its label into the mark
+  ("Reference(optional)"), because the gap was a CSS margin. It is now a real space, so it reads
+  "Reference (optional)". axe found no other issues in the send components.
+- The final check breaks `/send` on purpose — an unlabelled field, text that misses the AA ratio,
+  the amount field removed from the tab order — and requires the checks to notice each. Without it
+  a green run would only prove axe had nothing to say.
+
 ### Added — rate history retention and daily pruning ([#599](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/599))
 
 - `createPruningCollectorStep()` in `@corridor/engine` is a `RateCollectorLoop` step that, once
