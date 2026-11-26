@@ -5,7 +5,12 @@ A small Next.js (App Router, Tailwind v4) frontend for the engine:
 - **Dashboard** — every corridor in `../corridors/` with its liveness —
   `proven` / `verified` / `unverified` / `not runnable` — where only `proven` and
   `verified` count as runnable (`lib/corridors.ts`, using `liveness()` from
-  `@corridor/manifest`).
+  `@corridor/manifest`). Above them, the anchors attested in the on-chain registry
+  (`lib/registry.ts`) behind a Testnet / Mainnet switch. Every card names the network its
+  numbers come from, `?network=public` links straight to the mainnet view, and
+  `STELLAR_NETWORK` (`testnet` by default) sets which one opens first. A network with no
+  registry in `../contracts/deployments.json` says so, apart from a registry that could not
+  be read or one that is empty.
 - **Run a payment** — drive a payment through the engine and watch it walk the
   state machine, including the idempotent replay.
 - **Docs** — overview, getting started, architecture, HTTP API, key management, and
@@ -20,8 +25,9 @@ are out of date.
 Since [#80](https://github.com/corridor-in-a-box/corridor-in-a-box/pull/80) `web/` is
 its own pnpm workspace root (`web/pnpm-workspace.yaml`, with its own lockfile), so
 it builds and runs on its own — gated by its own CI job (`pnpm lint` +
-`pnpm typecheck` + `pnpm build`, see `.github/workflows/ci.yml`) rather than by
-the monorepo's test/lint gate. Lint is [oxlint](https://oxc.rs/docs/guide/usage/linter.html)
+`pnpm typecheck` + `pnpm build`, see `.github/workflows/ci.yml`)
+rather than by the monorepo's test/lint gate. Lint is
+[oxlint](https://oxc.rs/docs/guide/usage/linter.html)
 (`.oxlintrc.json`), not ESLint: ESLint's TypeScript parser refuses TS 7, while
 oxlint parses TS with its own Rust parser.
 
@@ -37,7 +43,20 @@ pnpm dev      # http://localhost:3000
 pnpm lint
 pnpm typecheck
 pnpm build
+pnpm test:a11y   # axe over every step of the /send flow (Playwright)
 ```
+
+`test:a11y` builds and serves the production app itself (`playwright.config.ts`), so
+it is slow on a cold machine and needs `pnpm exec playwright install --with-deps
+chromium` once. It runs against `e2e/accessibility.spec.ts`. It is a local check and
+does not run in CI.
+
+`/send` renders the send app without a route planner, a field loader or a sender,
+because `@corridor/service` offers none of them yet, so the flow stops after the
+first step there. The later steps are checked on `/send/a11y-fixture`: the same app
+with those three wired to fetches the spec answers with `page.route`. That page is
+a 404 unless the server runs with `SEND_A11Y_FIXTURE=1`, which the Playwright config
+sets; a server you start yourself for the checks needs it too.
 
 ## How it talks to the engine
 

@@ -46,6 +46,11 @@ import {
   parseBreakerArgs,
   type BreakerCommand,
 } from "./breaker";
+import {
+  formatProfileValidation,
+  loadAndValidateProfile,
+  parseProfileArgs,
+} from "./profile.js";
 import { formatLintResult, lintCorridor } from "./lint";
 import { buildPlan, formatPlan, parsePlanArgs, type Plan, type PlanArgs } from "./plan.js";
 import {
@@ -53,13 +58,12 @@ import {
   runRegistryCheck,
   type RegistryNetwork,
 } from "./plan-registry.js";
-import { routesCommand } from "./routes.js";
 
 /** The first line is the main usage text; the breaker help follows it. */
 const USAGE = [
   "usage: corridor <validate|plan|lint|canary|new> <file.corridor.yaml|domain> [options] | runs list --state held | resolve <key> --outcome <outcome> --note <text>",
   "       corridor plan <file.corridor.yaml> [--json] [--registry [--network testnet|public]]",
-  "       corridor routes --amount <amount> --to <asset> --country <country> [--offline] [--network <public|testnet>] [--dir <dir>] [--json]",
+  "       corridor profile validate <file.json> [--json]",
   '       corridor breaker <status [corridorId] | reset <corridorId> --reason "…">',
   "       corridor new <domain> [--source-asset <asset>] [--network <public|testnet>] [--out <file>] [--allow-not-runnable]",
   "",
@@ -81,7 +85,7 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "resolve") return resolveCommand(argv.slice(1));
   if (cmd === "breaker") return breakerCommand(argv.slice(1));
   if (cmd === "new") return newCommand(argv.slice(1));
-  if (cmd === "routes") return routesCommand(argv.slice(1));
+  if (cmd === "profile") return profileCommand(argv.slice(1));
   if (!cmd || (cmd !== "validate" && cmd !== "plan" && cmd !== "lint" && cmd !== "canary")) {
     console.error(USAGE);
     return EXIT_USAGE;
@@ -341,6 +345,23 @@ async function openStore(): Promise<
   return { store: new PostgresIdempotencyStore(pool), close: () => pool.end() };
 }
 
+async function profileCommand(args: string[]): Promise<number> {
+  const parsed = parseProfileArgs(args);
+  if (!parsed.ok) {
+    console.error(parsed.error);
+    return EXIT_USAGE;
+  }
+  const result = loadAndValidateProfile(parsed.file);
+  if (parsed.json) {
+    console.log(JSON.stringify(result, null, 2));
+  } else if (result.ok) {
+    console.log(formatProfileValidation(parsed.file, result));
+  } else {
+    console.error(formatProfileValidation(parsed.file, result));
+  }
+  return result.ok ? EXIT_OK : EXIT_FAILED;
+}
+
 async function resolveCommand(args: string[]): Promise<number> {
   const parsed = parseResolveArgs(args);
   if (!parsed) {
@@ -368,12 +389,10 @@ async function withStore(
 }
 
 void main(process.argv.slice(2))
-  .then((code) => {
-    process.exitCode = code;
-  })
+  .then((code) => process.exit(code))
   .catch((error: unknown) => {
     console.error(
       `✗ corridor command failed: ${error instanceof Error ? error.message : String(error)}`,
     );
-    process.exitCode = 1;
+    process.exit(1);
   });
