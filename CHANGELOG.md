@@ -7,6 +7,19 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
 
 ## [Unreleased]
 
+### Added — `third_party_payout` flag for SEP-6 corridors ([#644](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/644))
+
+- A `protocol: sep6` dest can declare `third_party_payout: true` when the anchor has
+  confirmed it lets a business withdraw to a third party, which cannot be probed (RFC 0004 §5).
+  `third_party_payout_note`, recording who confirmed it and when, is required when the flag
+  is `true`.
+- `@corridor/manifest` refuses the flag and its note on every non-SEP-6 dest (`sep31`,
+  `wallet`, `custom:<id>`, legacy dests with no `protocol`), refuses any non-boolean form
+  (object, string, `null`), and refuses an empty note. All three rules live in one check that
+  reads the raw dest, so a protocol schema can no longer drop the field silently.
+- `allowsThirdPartyPayout(corridor)` is exported for the router: `true` only for a SEP-6 dest
+  with `third_party_payout: true`. Documented in `docs/sep-coverage.md`.
+
 ### Added — Rate history page ([#601](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/601))
 
 - `docs/rate-history.md` documents rate history per RFC 0004 §3: the four sources (SEP-38

@@ -1,7 +1,6 @@
 // Drives the engine end to end against the scriptable mock anchor
 // (examples/mock-anchor): no network, no Stellar payment, no containers.
 
-import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Keypair, TransactionBuilder } from "@stellar/stellar-sdk";
 import { Sep10Client } from "@corridor/adapter-kit";
@@ -23,7 +22,7 @@ import {
   type Scenario,
 } from "../examples/mock-anchor/server";
 
-const MANIFEST = fileURLToPath(new URL("../corridors/mock.corridor.yaml", import.meta.url));
+const MANIFEST = new URL("../corridors/mock.corridor.yaml", import.meta.url).pathname;
 
 let anchor: MockAnchor;
 

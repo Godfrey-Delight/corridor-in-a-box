@@ -8,6 +8,7 @@ import {
   manifestHash,
   canonicalJson,
   complianceMethod,
+  allowsThirdPartyPayout,
 } from "@corridor/manifest";
 
 const valid = {
@@ -96,82 +97,135 @@ describe("manifest", () => {
       protocol: "sep6",
       endpoints: { home_domain: "d.example", transfer_server: "https://d.example/sep6" },
     };
+    const note = "Confirmed by the anchor's ops team, 2026-11-20, support ticket";
 
-    it("accepts third_party_payout: true on a SEP-6 destination", () => {
-      const dest = { ...sep6Dest, third_party_payout: true };
+    function refused(dest: unknown): string {
+      const r = parseCorridor({ ...valid, dest });
+      expect(r.ok).toBe(false);
+      if (r.ok) return "";
+      expect(r.error.code).toBe("MANIFEST_INVALID");
+      return r.error.message;
+    }
+
+    it("accepts third_party_payout: true with a note on a SEP-6 destination", () => {
+      const dest = { ...sep6Dest, third_party_payout: true, third_party_payout_note: note };
       const r = parseCorridor({ ...valid, dest });
       expect(r.ok).toBe(true);
       if (r.ok) {
-        expect(r.value.dest.protocol).toBe("sep6");
-        expect((r.value.dest as { third_party_payout?: boolean }).third_party_payout).toBe(
-          true,
-        );
+        expect(r.value.dest).toMatchObject({
+          protocol: "sep6",
+          third_party_payout: true,
+          third_party_payout_note: note,
+        });
+        expect(allowsThirdPartyPayout(r.value)).toBe(true);
       }
     });
 
-    it("accepts third_party_payout: true with note on a SEP-6 destination", () => {
-      const dest = {
+    it("requires third_party_payout_note when third_party_payout is true", () => {
+      const msg = refused({ ...sep6Dest, third_party_payout: true });
+      expect(msg).toContain("dest.third_party_payout_note");
+      expect(msg).toContain("required when third_party_payout is true");
+    });
+
+    it("refuses an empty or blank third_party_payout_note", () => {
+      for (const blank of ["", "   "]) {
+        const msg = refused({
+          ...sep6Dest,
+          third_party_payout: true,
+          third_party_payout_note: blank,
+        });
+        expect(msg).toContain("dest.third_party_payout_note: expected a non-empty string");
+      }
+    });
+
+    it("refuses a non-string third_party_payout_note", () => {
+      const msg = refused({
         ...sep6Dest,
         third_party_payout: true,
-        third_party_payout_note: "Confirmed by Alice on 2026-11-20 via support ticket",
-      };
-      const r = parseCorridor({ ...valid, dest });
-      expect(r.ok).toBe(true);
-      if (r.ok) {
-        expect((r.value.dest as { third_party_payout?: boolean }).third_party_payout).toBe(
-          true,
-        );
-        expect(
-          (r.value.dest as { third_party_payout_note?: string }).third_party_payout_note,
-        ).toBe("Confirmed by Alice on 2026-11-20 via support ticket");
+        third_party_payout_note: { by: "ops", at: "2026-11-20" },
+      });
+      expect(msg).toContain("dest.third_party_payout_note: expected a non-empty string");
+    });
+
+    it("accepts third_party_payout: false, with or without a note", () => {
+      for (const dest of [
+        { ...sep6Dest, third_party_payout: false },
+        { ...sep6Dest, third_party_payout: false, third_party_payout_note: "Anchor declined" },
+      ]) {
+        const r = parseCorridor({ ...valid, dest });
+        expect(r.ok).toBe(true);
+        if (r.ok) {
+          expect(r.value.dest).toMatchObject({ third_party_payout: false });
+          expect(allowsThirdPartyPayout(r.value)).toBe(false);
+        }
       }
     });
 
-    it("accepts third_party_payout: false on a SEP-6 destination", () => {
-      const dest = { ...sep6Dest, third_party_payout: false };
-      const r = parseCorridor({ ...valid, dest });
-      expect(r.ok).toBe(true);
-      if (r.ok) {
-        expect((r.value.dest as { third_party_payout?: boolean }).third_party_payout).toBe(
-          false,
-        );
-      }
-    });
-
-    it("defaults third_party_payout to undefined when omitted on SEP-6", () => {
+    it("leaves third_party_payout unset when omitted, and does not allow it", () => {
       const r = parseCorridor({ ...valid, dest: sep6Dest });
       expect(r.ok).toBe(true);
       if (r.ok) {
-        expect(
-          (r.value.dest as { third_party_payout?: boolean }).third_party_payout,
-        ).toBeUndefined();
+        expect("third_party_payout" in r.value.dest).toBe(false);
+        expect(allowsThirdPartyPayout(r.value)).toBe(false);
       }
     });
 
-    it("refuses third_party_payout on a SEP-31 destination", () => {
-      const dest = { ...valid.dest, protocol: "sep31", third_party_payout: true };
-      const r = parseCorridor({ ...valid, dest });
-      expect(r.ok).toBe(false);
-      if (!r.ok) {
-        expect(r.error.code).toBe("MANIFEST_INVALID");
-        expect(r.error.message).toContain("third_party_payout");
-        expect(r.error.message).toContain("sep6");
+    it("refuses an object form of third_party_payout (boolean only)", () => {
+      const msg = refused({
+        ...sep6Dest,
+        third_party_payout: { enabled: true, confirmed_by: "ops" },
+        third_party_payout_note: note,
+      });
+      expect(msg).toContain("dest.third_party_payout: expected true or false, got an object");
+    });
+
+    it("refuses string, number and null forms of third_party_payout", () => {
+      for (const [value, got] of [
+        ["true", "a string"],
+        [1, "a number"],
+        [null, "null"],
+      ] as const) {
+        const msg = refused({
+          ...sep6Dest,
+          third_party_payout: value,
+          third_party_payout_note: note,
+        });
+        expect(msg).toContain(`dest.third_party_payout: expected true or false, got ${got}`);
       }
+    });
+
+    it("refuses third_party_payout and its note on a SEP-31 destination", () => {
+      expect(refused({ ...valid.dest, third_party_payout: true })).toContain(
+        'dest.third_party_payout: only permitted on protocol "sep6", got "sep31"',
+      );
+      expect(refused({ ...valid.dest, third_party_payout_note: note })).toContain(
+        'dest.third_party_payout_note: only permitted on protocol "sep6", got "sep31"',
+      );
     });
 
     it("refuses third_party_payout on a custom destination protocol", () => {
-      const dest = {
+      const msg = refused({
         ...valid.dest,
         protocol: "custom:acme",
         endpoints: { home_domain: "d.example", base_url: "https://api.d.example", extra: {} },
         third_party_payout: true,
+      });
+      expect(msg).toContain(
+        'dest.third_party_payout: only permitted on protocol "sep6", got "custom:acme"',
+      );
+    });
+
+    it("refuses third_party_payout on a wallet destination, in any form", () => {
+      const wallet = {
+        name: "W",
+        asset: "XLM",
+        protocol: "wallet",
+        endpoints: { home_domain: "w.example" },
       };
-      const r = parseCorridor({ ...valid, dest });
-      expect(r.ok).toBe(false);
-      if (!r.ok) {
-        expect(r.error.code).toBe("MANIFEST_INVALID");
-        expect(r.error.message).toContain("third_party_payout");
-        expect(r.error.message).toContain("sep6");
+      for (const value of [true, false, { enabled: true }]) {
+        expect(refused({ ...wallet, third_party_payout: value })).toContain(
+          'dest.third_party_payout: only permitted on protocol "sep6", got "wallet"',
+        );
       }
     });
 
@@ -179,13 +233,15 @@ describe("manifest", () => {
       const legacyDest: Record<string, unknown> = structuredClone(valid.dest);
       delete legacyDest.protocol;
       legacyDest.third_party_payout = true;
-      const r = parseCorridor({ ...valid, dest: legacyDest });
-      expect(r.ok).toBe(false);
-      if (!r.ok) {
-        expect(r.error.code).toBe("MANIFEST_INVALID");
-        expect(r.error.message).toContain("third_party_payout");
-        expect(r.error.message).toContain("sep6");
-      }
+      expect(refused(legacyDest)).toContain(
+        'dest.third_party_payout: only permitted on protocol "sep6", got "sep31"',
+      );
+    });
+
+    it("allowsThirdPartyPayout is false for a non-SEP-6 corridor", () => {
+      const r = parseCorridor(valid);
+      expect(r.ok).toBe(true);
+      if (r.ok) expect(allowsThirdPartyPayout(r.value)).toBe(false);
     });
   });
 
