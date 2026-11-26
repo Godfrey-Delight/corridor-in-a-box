@@ -7,6 +7,18 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
 
 ## [Unreleased]
 
+### Added — Route planner guide ([#620](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/620))
+
+- `docs/route-planner.md` explains how a route is chosen, following RFC 0004 §1, §2 and
+  §5: the planner's steps, the three price labels (`locked`, `indicative`, `estimated`),
+  ranking by what the recipient gets priced cautiously then reliability then speed,
+  fallback to the next option with `<key>:alt1` before funds move, the route types (SEP-31,
+  SEP-6 with the third-party caveat, wallet), and how to plug in a custom `RoutePlanner`
+  and prove it with `describePlannerContract`. It marks which steps are on main and which
+  are planned (wallet trustline check #648).
+- `docs/README.md` indexes the guides and RFCs. The web docs site has a route planner
+  page, and `docs/route-resolver.md` and `README.md` link to the guide.
+
 ### Added — `POST /routes`: plan and rank routes before paying ([#617](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/617))
 
 - `@corridor/service` serves `POST /routes`. It takes RFC 0004's `RouteRequest` (`sourceAmount`,
