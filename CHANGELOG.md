@@ -7,6 +7,22 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
 
 ## [Unreleased]
 
+### Added — rate history retention and daily pruning ([#599](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/599))
+
+- `createPruningCollectorStep()` in `@corridor/engine` is a `RateCollectorLoop` step that, once
+  per UTC day, deletes raw `rate_samples` older than the retention period, oldest first, in
+  batches (1,000 rows, at most 100 batches a run; a larger backlog continues on the next tick).
+  `pruneRateSamples()` runs one pass directly.
+- Retention is `RATE_RETENTION_DAYS` whole UTC days (default 90). Values below 7 are refused,
+  because the minimum-data rule and the 7-day estimate window read raw samples.
+- The guard is part of the `DELETE`: a sample goes only when its series has a
+  `rate_daily_summaries` row for its UTC day, computed after the sample was recorded. Days
+  without one are kept and logged (`corridor.rate_pruning.unsummarized_days_skipped`). Daily
+  summaries are never deleted.
+- `pnpm rate:collector` (`examples/run-rate-collector.ts`) registers the step. Pruning adds no
+  table; the collector's database role needs `delete` on `rate_samples` (`docs/operations.md`).
+  `docs/rate-history.md` now states the retention.
+
 ### Added — SEP-6 corridors are candidates only with `third_party_payout` ([#645](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/645))
 
 - The router's planner step 1, `candidates(request, corridors)` in `@corridor/router`, keeps a
